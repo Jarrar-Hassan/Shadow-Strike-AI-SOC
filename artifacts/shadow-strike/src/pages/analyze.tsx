@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { RiskGauge } from "@/components/visuals/risk-gauge";
 import { NetworkGraph } from "@/components/visuals/network-graph";
-import { Activity, ShieldAlert, Cpu, CheckCircle2, Save, Loader2, Play, Copy, ExternalLink, Download, FileJson, Target, Shield, BookOpen, AlertTriangle } from "lucide-react";
+import { Activity, ShieldAlert, Cpu, CheckCircle2, Save, Loader2, Play, Copy, ExternalLink, Download, FileJson, Target, Shield, BookOpen, AlertTriangle, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
