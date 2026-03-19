@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { Shield, Lock, Zap, ArrowRight, Activity, Database, Search, User, BookOpen, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Shield, ArrowRight, Activity, Search, User, BookOpen, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
@@ -123,8 +123,10 @@ export default function Home() {
                     Start Free Analysis <ArrowRight className="w-5 h-5 ml-2" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="h-14 px-8 text-base border-slate-300 hover:bg-slate-100">
-                  View Demo Report
+                <Button size="lg" variant="outline" className="h-14 px-8 text-base border-slate-300 hover:bg-slate-100" asChild>
+                  <Link href="/analyze?demo=apt">
+                    View Demo Report
+                  </Link>
                 </Button>
               </motion.div>
             </motion.div>
@@ -280,63 +282,6 @@ export default function Home() {
                 <p className="text-muted-foreground">{item.desc}</p>
               </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">Choose the plan that fits your security operations needs.</p>
-            
-            <div className="flex items-center justify-center gap-4 mt-8">
-              <span className="text-sm font-medium">Monthly</span>
-              <div className="w-12 h-6 bg-primary rounded-full relative cursor-pointer shadow-inner">
-                <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
-              </div>
-              <span className="text-sm font-medium">Annually <span className="text-green-600 text-xs ml-1">-20%</span></span>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="p-8 border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-              <h3 className="text-xl font-bold mb-2">Free</h3>
-              <div className="text-4xl font-black mb-6">$0<span className="text-lg text-muted-foreground font-normal">/mo</span></div>
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> 5 reports per month</li>
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> Basic MITRE mapping</li>
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> Standard analysis speed</li>
-              </ul>
-              <Button variant="outline" className="w-full">Get Started</Button>
-            </Card>
-
-            <Card className="p-8 border-primary shadow-xl shadow-primary/10 relative flex flex-col transform md:-translate-y-4">
-              <div className="absolute top-0 inset-x-0 h-1 bg-primary rounded-t-lg" />
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Most Popular</div>
-              <h3 className="text-xl font-bold mb-2">Pro</h3>
-              <div className="text-4xl font-black mb-6">$29<span className="text-lg text-muted-foreground font-normal">/mo</span></div>
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> Unlimited reports</li>
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> Full MITRE & IOC extraction</li>
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> Advanced incident playbooks</li>
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> Priority analysis queue</li>
-              </ul>
-              <Button className="w-full shadow-lg shadow-primary/25">Upgrade to Pro</Button>
-            </Card>
-
-            <Card className="p-8 border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-              <h3 className="text-xl font-bold mb-2">Enterprise</h3>
-              <div className="text-4xl font-black mb-6">Custom</div>
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> API Access</li>
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> Custom log formats</li>
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> Dedicated support</li>
-                <li className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary shrink-0"/> SSO / SAML integration</li>
-              </ul>
-              <Button variant="outline" className="w-full">Contact Sales</Button>
-            </Card>
           </div>
         </div>
       </section>

