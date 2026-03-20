@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 
-const JWT_SECRET = process.env.JWT_SECRET || "shadowstrike-secret-key-2024";
+const JWT_SECRET = process.env.JWT_SECRET || "shadowstrike-dev-secret-change-in-production";
 
 export interface JwtPayload {
   userId: number;

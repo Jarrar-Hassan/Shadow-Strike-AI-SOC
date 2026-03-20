@@ -16,13 +16,24 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function seedAdmin() {
-  const adminEmail = "jarrarhassan05@gmail.com";
-  const adminPassword = "T3lthod@72";
-  const existing = await db.select().from(usersTable).where(eq(usersTable.email, adminEmail)).limit(1);
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    console.log("Skipping admin seed: ADMIN_EMAIL and ADMIN_PASSWORD env vars not set.");
+    return;
+  }
+
+  const existing = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, adminEmail))
+    .limit(1);
+
   if (existing.length === 0) {
     const passwordHash = await bcrypt.hash(adminPassword, 10);
     await db.insert(usersTable).values({ email: adminEmail, passwordHash, role: "admin" });
-    console.log("Admin account seeded");
+    console.log("Admin account seeded:", adminEmail);
   }
 }
 
